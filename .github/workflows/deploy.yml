@@ -3,7 +3,7 @@ name: Deploy Terraform on Azure
 on:
   push:
     branches:
-      - master  # Ou use 'main' dependendo do nome do seu branch
+      - master
 
 jobs:
   terraform:
