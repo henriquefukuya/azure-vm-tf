@@ -7,6 +7,11 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   terraform:
@@ -14,27 +19,28 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.1.7
+          terraform_version: latest
 
-      - name: Azure Login
+      - name: Azure Login via OIDC (Sem Service Principal Secret)
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
+          enable-AzPSSession: false
+
       - name: Terraform Init
         run: terraform init
-  
+        
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.event_name == 'push'
-        run: terraform apply -auto-approve
-        
-      - name: Terraform destroy
-        run: terraform destroy -auto-approve
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
